@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Devotion Video Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf9f6; --panel:#ffffff; --ink:#1c1c1c; --sub:#6b6b6b;
+    --line:#e4e2dc; --accent:#3c5a4d; --accent-ink:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#151513; --panel:#1e1e1c; --ink:#f2f1ec; --sub:#a8a6a0;
+      --line:#33322e; --accent:#7fae97; --accent-ink:#10201a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151513; --panel:#1e1e1c; --ink:#f2f1ec; --sub:#a8a6a0;
+    --line:#33322e; --accent:#7fae97; --accent-ink:#10201a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:28px 20px 60px;
+  }
+  h1{font-size:20px; font-weight:600; margin:0 0 4px;}
+  .sub{color:var(--sub); font-size:13px; margin:0 0 24px;}
+  .wrap{max-width:1080px; margin:0 auto; display:grid; grid-template-columns:1fr 380px; gap:28px;}
+  @media (max-width:860px){ .wrap{grid-template-columns:1fr;} }
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:16px;}
+  label{display:block; font-size:12.5px; color:var(--sub); margin:14px 0 5px;}
+  label:first-child{margin-top:0;}
+  input[type=text], textarea, input[type=number], select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
+    background:transparent; color:var(--ink); font-size:14px; font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:70px; line-height:1.4;}
+  input[type=file]{font-size:13px; color:var(--sub);}
+  .row{display:flex; gap:10px;}
+  .row > *{flex:1;}
+  .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  .swatch{
+    width:56px; height:100px; border-radius:8px; cursor:pointer; border:2px solid transparent;
+    overflow:hidden; position:relative; flex:0 0 auto; background:#222;
+  }
+  .swatch canvas{width:100%; height:100%; display:block;}
+  .swatch.selected{border-color:var(--accent);}
+  .swatch span{
+    position:absolute; bottom:2px; left:0; right:0; text-align:center; font-size:8.5px;
+    color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7);
+  }
+  .music-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:8px; cursor:pointer; font-size:13.5px; margin-bottom:6px;
+  }
+  .music-opt.selected{border-color:var(--accent); background:rgba(127,174,151,.08);}
+  .music-opt button{margin-left:auto;}
+  button{
+    font-family:inherit; font-size:13.5px; padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+    background:transparent; color:var(--ink); cursor:pointer;
+  }
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600;}
+  button:disabled{opacity:.45; cursor:default;}
+  .stage{display:flex; flex-direction:column; align-items:center; gap:14px;}
+  #stageWrap{position:relative; width:337px; height:600px; background:#000; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(0,0,0,.25);}
+  #stageWrap canvas{width:100%; height:100%; display:block;}
+  #timecode{
+    position:absolute; left:0; right:0; bottom:0; padding:6px 0 8px; text-align:center;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; letter-spacing:.02em;
+    color:#fff; background:linear-gradient(transparent, rgba(0,0,0,.55) 55%); pointer-events:none;
+  }
+  .transport{display:flex; gap:10px; align-items:center;}
+  .field-hint{font-size:11.5px; color:var(--sub); margin-top:4px;}
+  .status{font-size:12.5px; color:var(--sub); min-height:18px; text-align:center;}
+  .divider{border:none; border-top:1px solid var(--line); margin:18px 0;}
+  a.dl{display:inline-block; margin-top:2px; font-size:13px; color:var(--accent); text-decoration:underline;}
+  .textbox-card{border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;}
+  .textbox-card textarea{min-height:44px;}
+  .text-handle{
+    position:absolute; width:18px; height:18px; margin:-9px 0 0 -9px;
+    border-radius:50%; background:var(--accent); border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.4); cursor:grab; z-index:5; touch-action:none;
+  }
+  .text-handle:active{cursor:grabbing;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div>
+    <h1>Devotion Video Maker</h1>
+    <p class="sub">Fill in the panel, watch the preview, export when it looks right.</p>
+
+    <div class="panel">
+      <label>Channel / logo name</label>
+      <input type="text" id="channelName" value="YOUR DAILY DISCIPLE">
+
+      <label>Verse reference</label>
+      <input type="text" id="verseRef" placeholder="Proverbs 3:5-6">
+
+      <label>Verse text</label>
+      <textarea id="verseText" placeholder="Trust in the Lord with all your heart and lean not on your own understanding..."></textarea>
+
+      <label>Devotion audio (the narration)</label>
+      <input type="file" id="audioFile" accept="audio/*">
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label style="margin:0;">Font</label>
+        <button id="saveFontDefault" style="padding:3px 9px; font-size:11.5px;">Save as default</button>
+      </div>
+      <select id="fontFamily">
+        <option value="georgia" selected>Georgia (serif — current default)</option>
+        <option value="times">Times New Roman (serif)</option>
+        <option value="helvetica">Helvetica (sans)</option>
+        <option value="verdana">Verdana (sans)</option>
+        <option value="courier">Courier New (typewriter)</option>
+        <option value="special">Special Elite (typewriter style)</option>
+      </select>
+      <div class="row">
+        <div>
+          <label>Verse text size</label>
+          <input type="number" id="captionSize" min="24" max="90" step="1" value="54">
+        </div>
+        <div>
+          <label>Logo text size</label>
+          <input type="number" id="logoSize" min="24" max="100" step="1" value="54">
+        </div>
+      </div>
+      <p class="field-hint">Defaults match what you've already seen — only changes if you edit a number, or if you save new ones.</p>
+    </div>
+
+    <div class="panel">
+      <label style="margin-top:0;">Background type</label>
+      <select id="bgTypeSelect">
+        <option value="noise" selected>Noise texture</option>
+        <option value="landscape">Landscape (mountains/view)</option>
+      </select>
+      <label>Seed</label>
+      <div class="row" style="align-items:flex-end;">
+        <div>
+          <input type="number" id="bgSeedInput" min="1" value="1">
+        </div>
+        <div style="flex:0 0 auto; display:flex; gap:6px;">
+          <button id="bgPrev">◀</button>
+          <button id="bgNext">▶</button>
+          <button id="bgShuffle">🎲</button>
+        </div>
+      </div>
+      <label>Amplitude (landscape only)</label>
+      <input type="range" id="bgAmplitude" min="0.5" max="2" step="0.1" value="1">
+      <p class="field-hint" id="bgLabel">Seed #1 — Noise texture</p>
+      <div class="swatches" id="bgThumbs"></div>
+      <p class="field-hint">Click a thumbnail to jump straight to it, or use ◀ ▶ 🎲 to browse — there's no limit to the seeds.</p>
+      <label>Or use your own image / video</label>
+      <input type="file" id="bgUpload" accept="image/*,video/*">
+      <p class="field-hint">Your own file overrides the seed above until you clear it. <button id="clearBg" style="padding:2px 8px; font-size:11.5px;">Clear</button></p>
+    </div>
+
+    <div class="panel">
+      <label style="margin-top:0;">Background music</label>
+      <input type="file" id="musicUpload" accept="audio/*">
+      <p class="field-hint" id="musicLabel">No music yet — upload a track above</p>
+      <div id="musicScrubWrap" style="display:none;">
+        <canvas id="musicWaveform" width="600" height="64" style="width:100%; height:64px; border-radius:8px; cursor:pointer; display:block; margin-top:6px;"></canvas>
+        <p class="field-hint" id="musicStartLabel">Starts at 0:00</p>
+        <div class="row" style="align-items:center;">
+          <button id="previewMusicSnippet" style="flex:0 0 auto;">▶ Preview 5s from here</button>
+          <button id="clearMusic" style="flex:0 0 auto; padding:2px 8px; font-size:11.5px;">Clear</button>
+        </div>
+        <p class="field-hint">Click or drag anywhere on the waveform to choose where the song starts playing from.</p>
+      </div>
+      <label>Music volume</label>
+      <input type="range" id="musicVol" min="0" max="1" step="0.01" value="0.25">
+    </div>
+
+    <div class="panel">
+      <label style="margin-top:0;">Caption start delay (ms after audio begins)</label>
+      <input type="number" id="startDelay" value="600" step="50">
+      <label>Speed — milliseconds per word</label>
+      <input type="number" id="msPerWord" value="380" step="10">
+      <label>Verse disappears at (ms) — leave blank to keep it on screen</label>
+      <input type="number" id="verseDisappear" placeholder="never">
+      <p class="field-hint">Lower speed = faster reveal. Nudge these until the words land where your voice says them, then export.</p>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label style="margin:0;">Custom text overlays</label>
+        <button id="addTextBox" style="padding:3px 9px; font-size:11.5px;">+ Add text box</button>
+      </div>
+      <p class="field-hint">Drag the dots on the preview to position each one. Times are ms after the audio starts, same as above.</p>
+      <div id="textBoxesList"></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div id="stageWrap">
+    <canvas id="cv" width="1080" height="1920"></canvas>
+    <div id="timecode">0:00.0 / 0:00.0</div>
+  </div>
+    <div class="transport">
+      <button id="playBtn">▶ Preview</button>
+      <button id="exportBtn" class="primary">Export video</button>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div id="downloads"></div>
+  </div>
+
+</div>
+
+<script>
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+
+function wrapWords(ctx, words, maxWidth){
+  // returns array of lines (arrays of words) given current font
+  const lines = []; let cur = [];
+  for(const w of words){
+    const test = [...cur, w].join(' ');
+    if(ctx.measureText(test).width > maxWidth && cur.length){ lines.push(cur); cur = [w]; }
+    else cur.push(w);
+  }
+  if(cur.length) lines.push(cur);
+  return lines;
+}
+
+// ---------- fonts ----------
+const FONT_STACKS = {
+  georgia: 'Georgia, "Times New Roman", serif',
+  times: '"Times New Roman", Times, serif',
+  helvetica: 'Helvetica, Arial, sans-serif',
+  verdana: 'Verdana, Geneva, sans-serif',
+  courier: '"Courier New", Courier, monospace',
+  special: '"Special Elite", "Courier New", monospace',
+};
+const FONT_LABELS = {
+  georgia: 'Georgia (serif)',
+  times: 'Times New Roman',
+  helvetica: 'Helvetica (sans)',
+  verdana: 'Verdana (sans)',
+  courier: 'Courier New (typewriter)',
+  special: 'Special Elite (typewriter)',
+};
+function currentFontStack(){ return FONT_STACKS[$('fontFamily').value] || FONT_STACKS.georgia; }
+
+// ---------- seeded RNG (deterministic per index, so each numbered background/track is stable) ----------
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------- background: procedural generators (noise + landscape), driven by a seed ----------
+let bgType = 'noise'; // 'noise' | 'landscape'
+let bgSeed = 1;
+let userBg = null; // {type:'image'|'video', el}
+
+const PALETTES = [
+  ['#1b1035','#3a1c5c','#a13d78','#f2985a'], // dusk
+  ['#031b33','#0c3d5e','#1c7a8c','#8fe3c7'], // deep ocean
+  ['#0b2e13','#1f5c2b','#5fa649','#d9e26b'], // forest
+  ['#2b0f2e','#6a1e55','#b8366b','#f2a65a'], // sunset
+  ['#08111f','#132a4a','#2f5d8a','#bcd9f2'], // arctic night
+  ['#2c1608','#7a3b12','#c96e17','#f2c14e'], // desert fire
+  ['#1a1423','#3d2c53','#7c5ba6','#e8c1e0'], // lavender dusk
+  ['#041b1a','#0d3b36','#1f7a63','#a9e0b8'], // jungle
+];
+function hexToRgb(hex){ return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
+
+// classic-style 2D value/gradient noise, seeded via a shuffled permutation table
+function makeNoise2D(seed){
+  const rng = mulberry32(seed);
+  const perm = new Uint8Array(256);
+  for(let i=0;i<256;i++) perm[i]=i;
+  for(let i=255;i>0;i--){ const j = Math.floor(rng()*(i+1)); const tmp=perm[i]; perm[i]=perm[j]; perm[j]=tmp; }
+  const p = new Uint16Array(512);
+  for(let i=0;i<512;i++) p[i]=perm[i&255];
+  function fade(t){ return t*t*t*(t*(t*6-15)+10); }
+  function lerp(a,b,t){ return a+t*(b-a); }
+  function grad(hash,x,y){
+    const h = hash & 3;
+    const u = h<2 ? x : y, v = h<2 ? y : x;
+    return ((h&1)?-u:u) + ((h&2)?-2*v:2*v);
+  }
+  return function(x,y){
+    const X = Math.floor(x)&255, Y=Math.floor(y)&255;
+    const xf = x-Math.floor(x), yf = y-Math.floor(y);
+    const u=fade(xf), v=fade(yf);
+    const aa=p[p[X]+Y], ab=p[p[X]+Y+1], ba=p[p[X+1]+Y], bb=p[p[X+1]+Y+1];
+    return lerp( lerp(grad(aa,xf,yf), grad(ba,xf-1,yf), u), lerp(grad(ab,xf,yf-1), grad(bb,xf-1,yf-1), u), v );
+  };
+}
+function fbm(noise,x,y,octaves){
+  let sum=0, amp=0.5, freq=1;
+  for(let o=0;o<octaves;o++){ sum += noise(x*freq,y*freq)*amp; amp*=0.5; freq*=2; }
+  return sum;
+}
+
+let bgTextureCache = null; // {key, canvas}
+function renderNoiseTexture(seed, w, h){
+  const key = 'n:'+seed+':'+w+'x'+h;
+  if(bgTextureCache && bgTextureCache.key===key) return bgTextureCache.canvas;
+  const c = document.createElement('canvas'); c.width=w; c.height=h;
+  const cctx = c.getContext('2d');
+  const noise = makeNoise2D(seed);
+  const pal = PALETTES[seed % PALETTES.length].map(hexToRgb);
+  const zoom = 2 + (seed % 4); // varies the "zoom level" of the texture by seed
+  const img = cctx.createImageData(w,h);
+  const segCount = pal.length-1;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const nx = (x/w)*zoom, ny = (y/h)*zoom*(h/w);
+      const v = (fbm(noise, nx, ny, 4)+1)/2; // 0..1
+      const seg = Math.max(0,Math.min(0.9999, v))*segCount;
+      const i0 = Math.floor(seg), f = seg-i0;
+      const c0 = pal[i0], c1 = pal[Math.min(i0+1,segCount)];
+      const idx = (y*w+x)*4;
+      img.data[idx]   = c0[0]+(c1[0]-c0[0])*f;
+      img.data[idx+1] = c0[1]+(c1[1]-c0[1])*f;
+      img.data[idx+2] = c0[2]+(c1[2]-c0[2])*f;
+      img.data[idx+3] = 255;
+    }
+  }
+  cctx.putImageData(img,0,0);
+  bgTextureCache = { key, canvas:c };
+  return c;
+}
+function drawNoiseBackground(ctx,w,h,seed,t){
+  const viewW = 260, viewH = Math.round(viewW*(h/w));
+  const texW = viewW*2, texH = viewH+90; // extra room to pan around in
+  const tex = renderNoiseTexture(seed, texW, texH);
+  const maxOffX = texW-viewW, maxOffY = texH-viewH;
+  // smooth back-and-forth drift (never jumps, so no seam is ever visible)
+  const sx = (maxOffX/2)*(1+Math.sin(t*0.00011));
+  const sy = (maxOffY/2)*(1+Math.sin(t*0.00008+1.7));
+  ctx.drawImage(tex, sx, sy, viewW, viewH, 0, 0, w, h);
+}
+
+function getLandscapeParams(seed){
+  const rng = mulberry32(seed*97+11);
+  return {
+    layers: 3 + Math.floor(rng()*3),           // 3-5
+    hue: Math.floor(rng()*360),
+    baseAmplitude: 50 + rng()*130,             // seed-driven amplitude
+    frequency: 0.0015 + rng()*0.007,
+    hasSun: rng()<0.65,
+    isDark: rng()<0.4,
+  };
+}
+function drawLandscape(ctx,w,h,t,seed,ampMultiplier){
+  const p = getLandscapeParams(seed);
+  const skyTop = p.isDark ? `hsl(${p.hue},45%,14%)` : `hsl(${p.hue},70%,78%)`;
+  const skyBot = p.isDark ? `hsl(${(p.hue+40)%360},50%,26%)` : `hsl(${(p.hue+30)%360},70%,88%)`;
+  const g = ctx.createLinearGradient(0,0,0,h*0.68);
+  g.addColorStop(0, skyTop); g.addColorStop(1, skyBot);
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h*0.68);
+  if(p.hasSun){
+    const sunX = w*0.5 + Math.sin(t*0.00006)*w*0.08; // gentle horizontal drift
+    const sunY = h*0.28;
+    const glow = p.isDark ? 'rgba(235,238,255,0.85)' : 'rgba(255,248,220,0.9)';
+    const rg = ctx.createRadialGradient(sunX,sunY,10,sunX,sunY,210);
+    rg.addColorStop(0,glow); rg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(sunX,sunY,210,0,7); ctx.fill();
+  }
+  for(let i=0;i<p.layers;i++){
+    const depth = p.layers<=1 ? 0 : i/(p.layers-1);
+    const base = h*(0.55+depth*0.36);
+    const amp = p.baseAmplitude*(1-depth*0.45)*(ampMultiplier||1);
+    const freq = p.frequency*(1+depth*0.8);
+    const light = p.isDark ? (34 - depth*20) : (60 - depth*28);
+    const drift = t*0.00004*(1+depth*1.8); // foreground layers drift a bit faster — parallax
+    ctx.fillStyle = `hsl(${p.hue},${p.isDark?35:30}%,${Math.max(6,light)}%)`;
+    ctx.beginPath(); ctx.moveTo(0,h);
+    for(let x=0;x<=w;x+=28){
+      const y = base - Math.abs(Math.sin(x*freq + i*3 + drift))*amp - Math.abs(Math.sin(x*freq*2.4+i+drift*0.6))*amp*0.3;
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(w,h); ctx.closePath(); ctx.fill();
+  }
+}
+function describeBackground(seed,type){
+  type = type||bgType;
+  return `Seed #${seed} — ${type==='noise'?'Noise texture':'Landscape'}`;
+}
+
+// ---------- saved defaults (persisted per-browser via localStorage) ----------
+const DEFAULTS_KEY = 'devotionAppDefaults';
+function loadStoredDefaults(){
+  try{ return JSON.parse(localStorage.getItem(DEFAULTS_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveStoredDefaults(patch){
+  try{
+    const cur = loadStoredDefaults();
+    localStorage.setItem(DEFAULTS_KEY, JSON.stringify(Object.assign(cur, patch)));
+    return true;
+  }catch(e){ console.warn('Could not save defaults', e); return false; }
+}
+function flashSaved(btn){
+  const orig = btn.textContent;
+  btn.textContent = 'Saved ✓'; btn.disabled = true;
+  setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 1400);
+}
+function applyStoredDefaults(){
+  const d = loadStoredDefaults();
+  if(d.fontFamily) $('fontFamily').value = d.fontFamily;
+  if(d.captionSize!=null) $('captionSize').value = d.captionSize;
+  if(d.logoSize!=null) $('logoSize').value = d.logoSize;
+}
+
+// ---------- background controls (type + seed + thumbnail strip) ----------
+function renderBgLabel(){
+  const el = $('bgLabel'); if(el) el.textContent = userBg ? 'Using your own file' : describeBackground(bgSeed, bgType);
+}
+function setBgSeed(n){
+  bgSeed = Math.max(1, n);
+  userBg = null;
+  $('bgSeedInput').value = bgSeed;
+  renderBgLabel();
+  renderBgThumbnails();
+}
+function setBgType(type){
+  bgType = type;
+  userBg = null;
+  renderBgLabel();
+  renderBgThumbnails();
+}
+function drawBgAtSeed(ctx,w,h,t,type,seed){
+  if(type==='noise') drawNoiseBackground(ctx,w,h,seed,t);
+  else drawLandscape(ctx,w,h,t, seed, parseFloat($('bgAmplitude').value)||1);
+}
+function renderBgThumbnails(){
+  const wrap = $('bgThumbs'); if(!wrap) return;
+  wrap.innerHTML = '';
+  for(let i=0;i<8;i++){
+    const seed = bgSeed+i;
+    const div = document.createElement('div');
+    div.className = 'swatch' + (seed===bgSeed?' selected':'');
+    const c = document.createElement('canvas'); c.width=56; c.height=100;
+    drawBgAtSeed(c.getContext('2d'), 56, 100, 0, bgType, seed);
+    const label = document.createElement('span'); label.textContent = '#'+seed;
+    div.appendChild(c); div.appendChild(label);
+    div.onclick = ()=> setBgSeed(seed);
+    wrap.appendChild(div);
+  }
+}
+
+// ---------- music: upload your own track + pick where in it to start (waveform scrubber) ----------
+let audioCtx = null;
+function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+let userMusic = null; // {el, srcNode, startSec, duration, peaks}
+
+function computePeaks(buffer, bucketCount){
+  const data = buffer.getChannelData(0);
+  const bucketSize = Math.floor(data.length/bucketCount) || 1;
+  const peaks = [];
+  for(let i=0;i<bucketCount;i++){
+    let max = 0;
+    const start = i*bucketSize, end = Math.min(data.length, start+bucketSize);
+    for(let j=start;j<end;j++){ const v = Math.abs(data[j]); if(v>max) max = v; }
+    peaks.push(max);
+  }
+  return peaks;
+}
+function drawWaveform(){
+  const canvas = $('musicWaveform'); if(!canvas || !userMusic) return;
+  const wctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  wctx.clearRect(0,0,w,h);
+  wctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--line') || '#ccc';
+  wctx.fillRect(0,0,w,h);
+  const peaks = userMusic.peaks;
+  const barW = w/peaks.length;
+  wctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent') || '#3c5a4d';
+  peaks.forEach((p,i)=>{
+    const barH = Math.max(2, p*h);
+    wctx.fillRect(i*barW, (h-barH)/2, Math.max(1,barW-1), barH);
+  });
+  // playhead marker at the chosen start point
+  const x = (userMusic.startSec/userMusic.duration)*w;
+  wctx.fillStyle = 'rgba(0,0,0,0.55)';
+  wctx.fillRect(0,0,x,h);
+  wctx.strokeStyle = '#fff'; wctx.lineWidth = 2;
+  wctx.beginPath(); wctx.moveTo(x,0); wctx.lineTo(x,h); wctx.stroke();
+}
+function updateMusicStartLabel(){
+  const el = $('musicStartLabel'); if(!el || !userMusic) return;
+  el.textContent = `Starts at ${fmtTime(userMusic.startSec)} of ${fmtTime(userMusic.duration)}`;
+}
+async function loadMusicFile(file){
+  setStatus('Loading music track…');
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = await getCtx().decodeAudioData(arrayBuffer);
+  const el = new Audio(URL.createObjectURL(file));
+  el.crossOrigin = 'anonymous';
+  userMusic = { el, srcNode:null, startSec:0, duration:buffer.duration, peaks: computePeaks(buffer, 220) };
+  $('musicScrubWrap').style.display = 'block';
+  drawWaveform();
+  updateMusicStartLabel();
+  renderMusicLabel();
+  setStatus('Music track loaded: '+file.name+' — drag the waveform to pick where it starts.');
+}
+function setMusicStartFromEvent(e){
+  const canvas = $('musicWaveform');
+  const rect = canvas.getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (e.clientX-rect.left)/rect.width));
+  userMusic.startSec = frac*userMusic.duration;
+  drawWaveform();
+  updateMusicStartLabel();
+}
+function previewMusicSnippet(){
+  if(!userMusic) return;
+  userMusic.el.currentTime = userMusic.startSec;
+  userMusic.el.play();
+  clearTimeout(previewMusicSnippet._t);
+  previewMusicSnippet._t = setTimeout(()=> userMusic.el.pause(), 5000);
+}
+
+// ---------- music controls ----------
+function renderMusicLabel(){
+  const el = $('musicLabel'); if(el) el.textContent = userMusic ? 'Using your own track' : 'No music yet — upload a track above';
+}
+
+// ---------- audio wiring ----------
+let narrationEl = null, narrationSrcNode = null;
+let musicGainOut = null; // gain node all music routes through before destination(s)
+
+function ensureMusicGainOut(){
+  const ctx = getCtx();
+  if(!musicGainOut){ musicGainOut = ctx.createGain(); }
+  musicGainOut.gain.value = parseFloat($('musicVol').value);
+  return musicGainOut;
+}
+
+function stopMusic(){
+  if(userMusic && userMusic.el){ userMusic.el.pause(); userMusic.el.currentTime = userMusic.startSec||0; }
+}
+function startMusic(destinations){
+  stopMusic();
+  if(!userMusic) return;
+  const ctx = getCtx();
+  const out = ensureMusicGainOut();
+  destinations.forEach(d=> { try{ out.connect(d); }catch(e){} });
+  userMusic.el.currentTime = userMusic.startSec||0;
+  userMusic.el.loop = true;
+  if(!userMusic.srcNode){ userMusic.srcNode = ctx.createMediaElementSource(userMusic.el); }
+  userMusic.srcNode.connect(out);
+  userMusic.el.play();
+}
+
+// ---------- drawing a frame ----------
+let words = [];
+function getWords(){ return ($('verseText').value||'').trim().split(/\s+/).filter(Boolean); }
+
+function drawLogoAndVerseBox(ctx,w,h){
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  const stack = currentFontStack();
+  const logoSize = parseInt($('logoSize').value)||54;
+  ctx.font = `600 ${logoSize}px ${stack}`;
+  ctx.strokeStyle = CAPTION_STROKE; ctx.lineWidth = 6;
+  ctx.strokeText(($('channelName').value||'').toUpperCase(), w/2, 170);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(($('channelName').value||'').toUpperCase(), w/2, 170);
+  const ref = $('verseRef').value || '';
+  if(ref){
+    const refSize = Math.round(logoSize*0.6);
+    ctx.font = `400 ${refSize}px ${stack}`;
+    const tw = ctx.measureText(ref).width;
+    const boxW = tw+70, boxH=64, boxX = w/2-boxW/2, boxY=210;
+    ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=6;
+    ctx.strokeRect(boxX,boxY,boxW,boxH);
+    ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=2;
+    ctx.strokeRect(boxX,boxY,boxW,boxH);
+    ctx.strokeStyle = CAPTION_STROKE; ctx.lineWidth = 5;
+    ctx.strokeText(ref, w/2, boxY+42);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(ref, w/2, boxY+42);
+  }
+}
+
+const CAPTION_STROKE = 'rgba(0,0,0,0.82)';
+function computeCaptionLayout(w,h){
+  // Layout is computed against the FULL verse text so word positions never shift as more words reveal.
+  let fontSize = parseInt($('captionSize').value)||54, lines;
+  const stack = currentFontStack();
+  ctx.textAlign='left';
+  for(; fontSize>=24; fontSize-=2){
+    ctx.font = `500 ${fontSize}px ${stack}`;
+    lines = wrapWords(ctx, words, w*0.82);
+    if(lines.length<=6) break;
+  }
+  ctx.font = `500 ${fontSize}px ${stack}`;
+  const spaceW = ctx.measureText(' ').width;
+  const lineH = fontSize*1.35;
+  const totalH = lines.length*lineH;
+  let y = h*0.56 - totalH/2 + fontSize*0.8;
+  const placed = []; // {word, x, y, index}
+  let globalIndex = 0;
+  lines.forEach(line=>{
+    const widths = line.map(wd=>ctx.measureText(wd).width);
+    const totalLineW = widths.reduce((a,b)=>a+b,0) + spaceW*(line.length-1);
+    let x = w/2 - totalLineW/2;
+    line.forEach((wd, idx)=>{
+      placed.push({ word: wd, x, y, index: globalIndex });
+      globalIndex++;
+      x += widths[idx] + spaceW;
+    });
+    y += lineH;
+  });
+  return { placed, fontSize };
+}
+
+const WORD_ANIM_MS = 260;
+function drawCaption(ctx,w,h,audioT,startDelay,msPerWord){
+  if(!words.length) return;
+  const { placed, fontSize } = computeCaptionLayout(w,h);
+  ctx.font = `500 ${fontSize}px ${currentFontStack()}`;
+  ctx.textAlign = 'left';
+  ctx.lineJoin = 'round';
+  const disRaw = $('verseDisappear').value.trim();
+  const verseDisappearMs = disRaw==='' ? Infinity : (parseInt(disRaw)||Infinity);
+  placed.forEach(p=>{
+    const revealTime = startDelay + p.index*msPerWord;
+    let progress = Math.max(0, Math.min(1, (audioT - revealTime)/WORD_ANIM_MS));
+    if(progress<=0) return;
+    if(isFinite(verseDisappearMs) && audioT > verseDisappearMs){
+      progress *= Math.max(0, 1 - (audioT-verseDisappearMs)/200);
+    }
+    if(progress<=0) return;
+    ctx.save();
+    ctx.globalAlpha = progress;
+    const dy = (1-progress)*16;
+    ctx.strokeStyle = CAPTION_STROKE;
+    ctx.lineWidth = fontSize*0.11;
+    ctx.strokeText(p.word, p.x, p.y+dy);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(p.word, p.x, p.y+dy);
+    ctx.restore();
+  });
+}
+
+// ---------- custom text overlays ----------
+let textBoxes = [];
+let tbCounter = 0;
+
+function addTextBox(){
+  tbCounter++;
+  textBoxes.push({ id:'tb'+tbCounter, text:'New text', xPct:50, yPct:20, appearMs:1000, disappearMs:4000, font:'georgia', size:40 });
+  renderTextBoxUI();
+  buildTextHandles();
+}
+function renderTextBoxUI(){
+  const wrap = $('textBoxesList'); wrap.innerHTML='';
+  textBoxes.forEach(box=>{
+    const div = document.createElement('div');
+    div.className = 'textbox-card';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong style="font-size:12px; color:var(--sub);">Text box</strong>
+        <button data-action="remove" data-id="${box.id}" style="padding:2px 8px; font-size:11px;">Remove</button>
+      </div>
+      <label style="margin-top:0;">Text</label>
+      <textarea data-field="text" data-id="${box.id}">${box.text}</textarea>
+      <div class="row">
+        <div><label>X %</label><input type="number" min="0" max="100" data-field="xPct" data-id="${box.id}" value="${box.xPct}"></div>
+        <div><label>Y %</label><input type="number" min="0" max="100" data-field="yPct" data-id="${box.id}" value="${box.yPct}"></div>
+      </div>
+      <div class="row">
+        <div><label>Appears at (ms)</label><input type="number" data-field="appearMs" data-id="${box.id}" value="${box.appearMs}"></div>
+        <div><label>Disappears at (ms)</label><input type="number" data-field="disappearMs" data-id="${box.id}" value="${box.disappearMs}"></div>
+      </div>
+      <label>Font</label>
+      <select data-field="font" data-id="${box.id}">
+        ${Object.entries(FONT_LABELS).map(([k,l])=>`<option value="${k}" ${k===box.font?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <label>Size</label>
+      <input type="number" min="12" max="140" data-field="size" data-id="${box.id}" value="${box.size}">
+    `;
+    wrap.appendChild(div);
+  });
+}
+$('addTextBox').addEventListener('click', addTextBox);
+$('textBoxesList').addEventListener('input', e=>{
+  const id = e.target.dataset.id, field = e.target.dataset.field;
+  if(!id || !field) return;
+  const box = textBoxes.find(b=>b.id===id); if(!box) return;
+  if(field==='text' || field==='font') box[field] = e.target.value;
+  else box[field] = parseFloat(e.target.value)||0;
+  if(field==='xPct' || field==='yPct') updateHandlePosition(id);
+});
+$('textBoxesList').addEventListener('click', e=>{
+  if(e.target.dataset.action==='remove'){
+    textBoxes = textBoxes.filter(b=>b.id!==e.target.dataset.id);
+    renderTextBoxUI(); buildTextHandles();
+  }
+});
+
+function buildTextHandles(){
+  document.querySelectorAll('.text-handle').forEach(el=>el.remove());
+  textBoxes.forEach(box=>{
+    const h = document.createElement('div');
+    h.className = 'text-handle'; h.dataset.id = box.id; h.title = 'Drag to position';
+    h.style.left = box.xPct+'%'; h.style.top = box.yPct+'%';
+    h.addEventListener('pointerdown', e=>{ dragId = box.id; e.target.setPointerCapture(e.pointerId); });
+    $('stageWrap').appendChild(h);
+  });
+}
+function updateHandlePosition(id){
+  const box = textBoxes.find(b=>b.id===id);
+  const el = document.querySelector(`.text-handle[data-id="${id}"]`);
+  if(box && el){ el.style.left = box.xPct+'%'; el.style.top = box.yPct+'%'; }
+}
+let dragId = null;
+document.addEventListener('pointermove', e=>{
+  if(!dragId) return;
+  const rect = $('stageWrap').getBoundingClientRect();
+  let xPct = Math.max(0, Math.min(100, ((e.clientX-rect.left)/rect.width)*100));
+  let yPct = Math.max(0, Math.min(100, ((e.clientY-rect.top)/rect.height)*100));
+  const box = textBoxes.find(b=>b.id===dragId);
+  if(!box) return;
+  box.xPct = Math.round(xPct); box.yPct = Math.round(yPct);
+  updateHandlePosition(dragId);
+  const xInput = document.querySelector(`input[data-field="xPct"][data-id="${dragId}"]`);
+  const yInput = document.querySelector(`input[data-field="yPct"][data-id="${dragId}"]`);
+  if(xInput) xInput.value = box.xPct;
+  if(yInput) yInput.value = box.yPct;
+});
+document.addEventListener('pointerup', ()=>{ dragId = null; });
+
+function drawCustomTextBoxes(ctx,w,h,audioT,ignoreTiming){
+  textBoxes.forEach(box=>{
+    if(!box.text || !box.text.trim()) return;
+    let alpha = 1;
+    if(!ignoreTiming){
+      const appear = box.appearMs||0;
+      const disappear = Math.max(box.disappearMs||0, appear+50);
+      const alphaIn = Math.max(0, Math.min(1, (audioT-appear)/WORD_ANIM_MS));
+      if(alphaIn<=0) return;
+      let alphaOut = 1;
+      if(audioT > disappear) alphaOut = Math.max(0, 1-((audioT-disappear)/180));
+      alpha = alphaIn*alphaOut;
+      if(alpha<=0) return;
+      var dy = (1-alphaIn)*16;
+    } else { var dy = 0; }
+    const stack = FONT_STACKS[box.font] || FONT_STACKS.georgia;
+    const size = box.size||40;
+    ctx.font = `500 ${size}px ${stack}`;
+    ctx.textAlign = 'center'; ctx.lineJoin='round';
+    const lines = wrapWords(ctx, box.text.trim().split(/\s+/), w*0.82);
+    const lineH = size*1.3;
+    const totalH = lines.length*lineH;
+    const cx = w*(box.xPct/100), cy = h*(box.yPct/100);
+    let y = cy - totalH/2 + size*0.75 + dy;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    lines.forEach(line=>{
+      const txt = line.join(' ');
+      ctx.strokeStyle = CAPTION_STROKE; ctx.lineWidth = size*0.11;
+      ctx.strokeText(txt, cx, y);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(txt, cx, y);
+      y += lineH;
+    });
+    ctx.restore();
+  });
+}
+
+function drawBackground(t){
+  if(userBg){
+    if(userBg.type==='image'){ coverDraw(userBg.el, W, H); }
+    else { coverDraw(userBg.el, W, H); }
+  } else {
+    drawBgAtSeed(ctx, W, H, t, bgType, bgSeed);
+  }
+  // subtle dark overlay for legibility
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,0,0,0.15)'); grad.addColorStop(0.5,'rgba(0,0,0,0.05)'); grad.addColorStop(1,'rgba(0,0,0,0.35)');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+}
+function coverDraw(el, w, h){
+  const sw = el.videoWidth||el.naturalWidth||w, sh = el.videoHeight||el.naturalHeight||h;
+  const scale = Math.max(w/sw, h/sh);
+  const dw = sw*scale, dh = sh*scale;
+  ctx.drawImage(el, (w-dw)/2, (h-dh)/2, dw, dh);
+}
+
+function fmtTime(sec){
+  if(!isFinite(sec)) sec = 0;
+  const m = Math.floor(sec/60), s = (sec%60).toFixed(1).padStart(4,'0');
+  return `${m}:${s}`;
+}
+
+let rafId = null;
+function renderFrame(){
+  words = getWords();
+  const t = performance.now();
+  const startDelay = parseInt($('startDelay').value)||0;
+  const msPerWord = Math.max(30, parseInt($('msPerWord').value)||300);
+  const audioT = narrationEl ? narrationEl.currentTime*1000 : 0;
+
+  drawBackground(t);
+  drawLogoAndVerseBox(ctx, W, H);
+  drawCaption(ctx, W, H, audioT, startDelay, msPerWord);
+  drawCustomTextBoxes(ctx, W, H, audioT, false);
+
+  const tc = $('timecode');
+  tc.style.display = 'block';
+  tc.textContent = `${fmtTime(narrationEl.currentTime)} / ${fmtTime(narrationEl.duration||0)}`;
+
+  rafId = requestAnimationFrame(renderFrame);
+}
+function stopRenderLoop(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } showHandles(); }
+function showHandles(){ document.querySelectorAll('.text-handle').forEach(el=>el.style.display='block'); }
+function hideHandles(){ document.querySelectorAll('.text-handle').forEach(el=>el.style.display='none'); }
+
+// static preview when not playing — freezes at the exact point playback stopped
+function renderStatic(){
+  words = getWords();
+  drawBackground(performance.now());
+  drawLogoAndVerseBox(ctx, W, H);
+  if(narrationEl){
+    const startDelay = parseInt($('startDelay').value)||0;
+    const msPerWord = Math.max(30, parseInt($('msPerWord').value)||300);
+    drawCaption(ctx, W, H, narrationEl.currentTime*1000, startDelay, msPerWord);
+    drawCustomTextBoxes(ctx, W, H, narrationEl.currentTime*1000, false);
+    const tc = $('timecode');
+    tc.style.display = 'block';
+    tc.textContent = `${fmtTime(narrationEl.currentTime)} / ${fmtTime(narrationEl.duration||0)}`;
+  } else {
+    drawCaption(ctx, W, H, 999999, 0, 1);
+    drawCustomTextBoxes(ctx, W, H, 0, true);
+  }
+}
+setInterval(()=>{ if(!rafId) renderStatic(); }, 400);
+renderStatic();
+
+// ---------- file inputs ----------
+$('audioFile').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  if(narrationEl){ narrationEl.pause(); }
+  narrationEl = new Audio(URL.createObjectURL(f));
+  narrationEl.crossOrigin = 'anonymous';
+  setStatus('Narration audio loaded: '+f.name);
+});
+$('bgUpload').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const url = URL.createObjectURL(f);
+  if(f.type.startsWith('video')){
+    const v = document.createElement('video'); v.src=url; v.muted=true; v.loop=true; v.playsInline=true;
+    v.oncanplay = ()=>{ v.play(); userBg = {type:'video', el:v}; renderBgLabel(); };
+  } else {
+    const img = new Image(); img.onload = ()=>{ userBg = {type:'image', el:img}; renderBgLabel(); }; img.src = url;
+  }
+});
+$('clearBg').addEventListener('click', ()=>{ userBg=null; renderBgLabel(); renderBgThumbnails(); });
+
+$('bgTypeSelect').addEventListener('change', e=> setBgType(e.target.value));
+$('bgSeedInput').addEventListener('input', e=> setBgSeed(parseInt(e.target.value)||1));
+$('bgPrev').addEventListener('click', ()=> setBgSeed(Math.max(1,bgSeed-1)));
+$('bgNext').addEventListener('click', ()=> setBgSeed(bgSeed+1));
+$('bgShuffle').addEventListener('click', ()=> setBgSeed(1+Math.floor(Math.random()*100000)));
+$('bgAmplitude').addEventListener('input', ()=>{ renderBgThumbnails(); });
+$('musicUpload').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  loadMusicFile(f);
+});
+$('clearMusic').addEventListener('click', ()=>{
+  if(userMusic && userMusic.el){ userMusic.el.pause(); }
+  userMusic = null;
+  $('musicScrubWrap').style.display = 'none';
+  renderMusicLabel();
+});
+let musicDragging = false;
+$('musicWaveform').addEventListener('pointerdown', e=>{ musicDragging = true; setMusicStartFromEvent(e); });
+document.addEventListener('pointermove', e=>{ if(musicDragging) setMusicStartFromEvent(e); });
+document.addEventListener('pointerup', ()=>{ musicDragging = false; });
+$('previewMusicSnippet').addEventListener('click', previewMusicSnippet);
+
+// ---------- transport ----------
+let playing = false;
+$('playBtn').addEventListener('click', ()=>{
+  if(!narrationEl){ setStatus('Add your narration audio first.'); return; }
+  if(playing){
+    narrationEl.pause(); stopMusic(); stopRenderLoop(); playing=false;
+    $('playBtn').textContent = '▶ Preview';
+    renderStatic();
+    return;
+  }
+  const ctx = getCtx();
+  if(!narrationSrcNode){ narrationSrcNode = ctx.createMediaElementSource(narrationEl); }
+  try{ narrationSrcNode.disconnect(); }catch(e){}
+  narrationSrcNode.connect(ctx.destination);
+  narrationEl.currentTime = 0;
+  narrationEl.play();
+  startMusic([ctx.destination]);
+  playing = true;
+  $('playBtn').textContent = '⏸ Stop';
+  hideHandles();
+  renderFrame();
+  narrationEl.onended = ()=>{ stopMusic(); stopRenderLoop(); playing=false; $('playBtn').textContent='▶ Preview'; renderStatic(); };
+});
+
+function setStatus(msg){ $('status').textContent = msg; }
+
+// ---------- export ----------
+$('exportBtn').addEventListener('click', exportVideo);
+
+async function exportVideo(){
+  if(!narrationEl){ setStatus('Add your narration audio first.'); return; }
+  if(playing){ narrationEl.pause(); stopMusic(); stopRenderLoop(); playing=false; $('playBtn').textContent='▶ Preview'; }
+  $('exportBtn').disabled = true;
+  $('downloads').innerHTML = '';
+  setStatus('Preparing recording…');
+
+  const ctx = getCtx();
+  if(!narrationSrcNode){ narrationSrcNode = ctx.createMediaElementSource(narrationEl); }
+  try{ narrationSrcNode.disconnect(); }catch(e){}
+
+  const mixDest = ctx.createMediaStreamDestination();
+  narrationSrcNode.connect(mixDest);
+  narrationSrcNode.connect(ctx.destination); // so you can hear it while it records
+  startMusic([mixDest, ctx.destination]);
+
+  const canvasStream = cv.captureStream(30);
+  const combined = new MediaStream([...canvasStream.getVideoTracks(), ...mixDest.stream.getAudioTracks()]);
+
+  // Prefer a browser that can record MP4 natively (e.g. Safari) — no conversion needed at all.
+  let mimeType = null, nativeMp4 = false;
+  ['video/mp4;codecs=avc1,mp4a', 'video/mp4'].forEach(t=>{
+    if(!mimeType && MediaRecorder.isTypeSupported(t)){ mimeType = t; nativeMp4 = true; }
+  });
+  if(!mimeType){
+    mimeType = 'video/webm;codecs=vp9,opus';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8,opus';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+  }
+
+  const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 6_000_000 });
+  const chunks = [];
+  recorder.ondataavailable = e=>{ if(e.data.size) chunks.push(e.data); };
+
+  narrationEl.currentTime = 0;
+  hideHandles();
+  recorder.start();
+  narrationEl.play();
+  renderFrame();
+  setStatus('Recording… ('+Math.ceil(narrationEl.duration||0)+'s)');
+
+  narrationEl.onended = async ()=>{
+    stopMusic(); stopRenderLoop();
+    setTimeout(()=> recorder.stop(), 200);
+  };
+
+  recorder.onstop = async ()=>{
+    if(nativeMp4){
+      const mp4Blob = new Blob(chunks, {type:'video/mp4'});
+      offerDownload(mp4Blob, 'devotion.mp4', 'Download .mp4');
+      setStatus('Done — MP4 ready.');
+      $('exportBtn').disabled = false;
+      return;
+    }
+    const webmBlob = new Blob(chunks, {type:'video/webm'});
+    offerDownload(webmBlob, 'devotion.webm', 'Download .webm');
+    setStatus('Recording done. Trying to convert to MP4 in-browser…');
+    try{
+      const mp4Blob = await convertToMp4(webmBlob);
+      offerDownload(mp4Blob, 'devotion.mp4', 'Download .mp4');
+      setStatus('Done — MP4 ready.');
+    }catch(err){
+      console.error(err);
+      setStatus('Your browser can\'t convert to MP4 in this app (it needs a network request this sandbox blocks). Use the .webm above — either upload it as-is, or drop it into CapCut / VLC / a free converter for a 5-second MP4 export.');
+    }
+    $('exportBtn').disabled = false;
+  };
+}
+
+function offerDownload(blob, filename, label){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.className='dl'; a.textContent = label;
+  a.style.display='block';
+  $('downloads').appendChild(a);
+}
+
+let ffmpegLoaded = false, ffmpegInstance = null;
+async function loadFfmpeg(){
+  if(ffmpegLoaded) return ffmpegInstance;
+  await new Promise((res,rej)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  const { createFFmpeg } = FFmpeg;
+  ffmpegInstance = createFFmpeg({ log:false, corePath:'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
+  await ffmpegInstance.load();
+  ffmpegLoaded = true;
+  return ffmpegInstance;
+}
+async function convertToMp4(webmBlob){
+  const ff = await loadFfmpeg();
+  const buf = new Uint8Array(await webmBlob.arrayBuffer());
+  ff.FS('writeFile', 'in.webm', buf);
+  await ff.run('-i','in.webm','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','out.mp4');
+  const data = ff.FS('readFile','out.mp4');
+  return new Blob([data.buffer], {type:'video/mp4'});
+}
+
+// ---------- save-as-default button (font only) ----------
+$('saveFontDefault').addEventListener('click', e=>{
+  saveStoredDefaults({
+    fontFamily: $('fontFamily').value,
+    captionSize: parseInt($('captionSize').value)||54,
+    logoSize: parseInt($('logoSize').value)||54,
+  });
+  flashSaved(e.target);
+});
+
+// ---------- init ----------
+applyStoredDefaults();
+renderBgLabel();
+renderBgThumbnails();
+renderMusicLabel();
+buildTextHandles();
+</script>
+</body>
+</html>
