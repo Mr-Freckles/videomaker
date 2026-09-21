@@ -86,9 +86,26 @@
     box-shadow:0 1px 4px rgba(0,0,0,.4); cursor:grab; z-index:5; touch-action:none;
   }
   .text-handle:active{cursor:grabbing;}
+  .tabs{max-width:1080px; margin:20px auto 0; padding:0 20px; display:flex; gap:8px;}
+  .tab-btn{padding:9px 18px; border-radius:9px 9px 0 0; border:1px solid var(--line); border-bottom:none; background:var(--bg); color:var(--sub); font-size:14px; cursor:pointer;}
+  .tab-btn.active{background:var(--panel); color:var(--ink); font-weight:600;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  #postCarouselViewport{width:360px; height:360px; border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(0,0,0,.25); position:relative; touch-action:pan-y;}
+  #postCarouselTrack{display:flex; height:100%; transition:transform .28s ease;}
+  #postCarouselTrack canvas{width:360px; height:360px; flex:0 0 360px; display:block;}
+  #postDots{display:flex; justify-content:center; gap:6px; margin-top:2px;}
+  .post-dot{width:7px; height:7px; border-radius:50%; background:var(--line); cursor:pointer;}
+  .post-dot.active{background:var(--accent);}
 </style>
 </head>
 <body>
+<div class="tabs">
+  <button class="tab-btn active" data-tab="videoTab">🎬 Video</button>
+  <button class="tab-btn" data-tab="postTab">🖼️ Post</button>
+</div>
+
+<div id="videoTab" class="tab-panel active">
 <div class="wrap">
 
   <div>
@@ -213,6 +230,82 @@
     <div id="downloads"></div>
   </div>
 
+</div>
+</div>
+
+<div id="postTab" class="tab-panel">
+  <div class="wrap">
+
+    <div>
+      <h1>Instagram Post Maker</h1>
+      <p class="sub">Pick a gradient, paste your quote, and flick through pages like an Instagram carousel.</p>
+
+      <div class="panel">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <label style="margin:0;">Pages</label>
+          <button id="addPage" style="padding:3px 9px; font-size:11.5px;">+ Add page</button>
+        </div>
+        <div class="swatches" id="pageThumbs"></div>
+        <p class="field-hint"><button id="duplicatePage" style="padding:2px 8px; font-size:11.5px;">Duplicate current</button> <button id="removePage" style="padding:2px 8px; font-size:11.5px;">Remove current</button></p>
+      </div>
+
+      <div class="panel">
+        <label style="margin-top:0;">Quote</label>
+        <textarea id="quoteText" style="min-height:90px;" placeholder="Paste your quote here..."></textarea>
+      </div>
+
+      <div class="panel">
+        <label style="margin-top:0;">Gradient</label>
+        <div class="swatches" id="gradientSwatches"></div>
+        <label>Custom</label>
+        <div class="row" style="align-items:center;">
+          <div><input type="color" id="customColor1" value="#3a1c5c" style="width:100%; height:36px;"></div>
+          <div><input type="color" id="customColor2" value="#f2985a" style="width:100%; height:36px;"></div>
+        </div>
+        <label>Angle</label>
+        <input type="range" id="gradientAngle" min="0" max="360" step="5" value="135">
+        <button id="applyCustomGradient" style="margin-top:6px;">Use this custom gradient</button>
+      </div>
+
+      <div class="panel">
+        <label style="margin-top:0;">Text style</label>
+        <select id="postFontFamily">
+          <option value="georgia" selected>Georgia (serif)</option>
+          <option value="times">Times New Roman</option>
+          <option value="helvetica">Helvetica (sans)</option>
+          <option value="verdana">Verdana (sans)</option>
+          <option value="courier">Courier New (typewriter)</option>
+          <option value="special">Special Elite (typewriter)</option>
+        </select>
+        <div class="row">
+          <div><label>Size</label><input type="number" id="postFontSize" min="24" max="140" value="64"></div>
+          <div><label>Color</label>
+            <select id="postTextColor">
+              <option value="white" selected>White</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div id="postCarouselViewport">
+        <div id="postCarouselTrack"></div>
+      </div>
+      <div id="postDots"></div>
+      <div class="transport">
+        <button id="postPrev">◀</button>
+        <button id="postNext">▶</button>
+      </div>
+      <div class="transport">
+        <button id="downloadCurrentPage">Download this page</button>
+        <button id="downloadAllPages" class="primary">Download all pages</button>
+      </div>
+      <div class="status" id="postStatus"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -1037,6 +1130,228 @@ renderBgLabel();
 renderBgThumbnails();
 renderMusicLabel();
 buildTextHandles();
+
+// ==================== TAB SWITCHING ====================
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $(btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='postTab') renderPostCarousel();
+  });
+});
+
+// ==================== INSTAGRAM POST MAKER ====================
+const POST_SIZE = 1080;
+const GRADIENT_PRESETS = [
+  { name:'Dusk',    colors:['#1b1035','#a13d78','#f2985a'] },
+  { name:'Ocean',   colors:['#031b33','#0c3d5e','#8fe3c7'] },
+  { name:'Forest',  colors:['#0b2e13','#5fa649','#d9e26b'] },
+  { name:'Sunset',  colors:['#2b0f2e','#b8366b','#f2a65a'] },
+  { name:'Arctic',  colors:['#08111f','#2f5d8a','#bcd9f2'] },
+  { name:'Fire',    colors:['#2c1608','#c96e17','#f2c14e'] },
+  { name:'Lavender',colors:['#1a1423','#7c5ba6','#e8c1e0'] },
+  { name:'Jungle',  colors:['#041b1a','#1f7a63','#a9e0b8'] },
+  { name:'Rose Gold',colors:['#3a1c25','#b8637a','#f2c9b0'] },
+  { name:'Midnight',colors:['#05070f','#1c2340','#3a4a7a'] },
+];
+let postPages = [];
+let postCurrentIndex = 0;
+let postPageCounter = 0;
+
+function newPage(overrides){
+  postPageCounter++;
+  return Object.assign({
+    id: 'p'+postPageCounter,
+    gradient: GRADIENT_PRESETS[0].colors.slice(),
+    angle: 135,
+    text: 'Your quote here',
+    font: 'georgia',
+    size: 64,
+    textColor: 'white',
+  }, overrides||{});
+}
+if(postPages.length===0) postPages.push(newPage());
+
+function drawGradientBg(ctx,w,h,colors,angleDeg){
+  const rad = (angleDeg*Math.PI)/180;
+  const x1 = w/2 - Math.cos(rad)*w/2, y1 = h/2 - Math.sin(rad)*h/2;
+  const x2 = w/2 + Math.cos(rad)*w/2, y2 = h/2 + Math.sin(rad)*h/2;
+  const g = ctx.createLinearGradient(x1,y1,x2,y2);
+  colors.forEach((c,i)=> g.addColorStop(i/(colors.length-1||1), c));
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+}
+function drawPostPage(ctx, page){
+  const w = POST_SIZE, h = POST_SIZE;
+  drawGradientBg(ctx, w, h, page.gradient, page.angle);
+  const stack = FONT_STACKS[page.font] || FONT_STACKS.georgia;
+  const fill = page.textColor==='dark' ? '#1c1c1c' : '#ffffff';
+  const stroke = page.textColor==='dark' ? 'rgba(255,255,255,0.85)' : CAPTION_STROKE;
+  let fontSize = page.size, lines;
+  ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+  for(; fontSize>=24; fontSize-=2){
+    ctx.font = `500 ${fontSize}px ${stack}`;
+    lines = wrapWords(ctx, (page.text||'').trim().split(/\s+/).filter(Boolean), w*0.8);
+    if(lines.length*(fontSize*1.35) <= h*0.75) break;
+  }
+  ctx.font = `500 ${fontSize}px ${stack}`;
+  const lineH = fontSize*1.35;
+  const totalH = lines.length*lineH;
+  let y = h/2 - totalH/2 + fontSize*0.8;
+  lines.forEach(line=>{
+    const txt = line.join(' ');
+    ctx.strokeStyle = stroke; ctx.lineWidth = fontSize*0.09;
+    ctx.strokeText(txt, w/2, y);
+    ctx.fillStyle = fill;
+    ctx.fillText(txt, w/2, y);
+    y += lineH;
+  });
+}
+
+function buildGradientSwatches(){
+  const wrap = $('gradientSwatches'); wrap.innerHTML = '';
+  GRADIENT_PRESETS.forEach(preset=>{
+    const div = document.createElement('div');
+    div.className = 'swatch';
+    div.style.width = '48px'; div.style.height = '48px';
+    div.style.background = `linear-gradient(135deg, ${preset.colors.join(',')})`;
+    div.title = preset.name;
+    div.onclick = ()=>{ postPages[postCurrentIndex].gradient = preset.colors.slice(); postPages[postCurrentIndex].angle = 135; renderPostCarousel(); };
+    wrap.appendChild(div);
+  });
+}
+
+function renderPostCarousel(){
+  const track = $('postCarouselTrack');
+  track.style.width = (postPages.length*360)+'px';
+  track.innerHTML = '';
+  postPages.forEach(page=>{
+    const c = document.createElement('canvas'); c.width = POST_SIZE; c.height = POST_SIZE;
+    drawPostPage(c.getContext('2d'), page);
+    track.appendChild(c);
+  });
+  track.style.transition = 'none';
+  track.style.transform = `translateX(${-postCurrentIndex*360}px)`;
+  void track.offsetWidth;
+  track.style.transition = '';
+
+  const dots = $('postDots'); dots.innerHTML = '';
+  postPages.forEach((p,i)=>{
+    const d = document.createElement('div');
+    d.className = 'post-dot'+(i===postCurrentIndex?' active':'');
+    d.onclick = ()=>{ postCurrentIndex = i; renderPostCarousel(); };
+    dots.appendChild(d);
+  });
+
+  renderPageThumbs();
+  const page = postPages[postCurrentIndex];
+  $('quoteText').value = page.text;
+  $('postFontFamily').value = page.font;
+  $('postFontSize').value = page.size;
+  $('postTextColor').value = page.textColor;
+  $('gradientAngle').value = page.angle;
+}
+function renderPageThumbs(){
+  const wrap = $('pageThumbs'); wrap.innerHTML = '';
+  postPages.forEach((page,i)=>{
+    const div = document.createElement('div');
+    div.className = 'swatch'+(i===postCurrentIndex?' selected':'');
+    div.style.width = '48px'; div.style.height = '48px';
+    const c = document.createElement('canvas'); c.width=100; c.height=100;
+    drawPostPage(c.getContext('2d'), page);
+    div.appendChild(c);
+    div.onclick = ()=>{ postCurrentIndex = i; renderPostCarousel(); };
+    wrap.appendChild(div);
+  });
+}
+function goToPage(i){
+  postCurrentIndex = Math.max(0, Math.min(postPages.length-1, i));
+  renderPostCarousel();
+}
+
+$('addPage').addEventListener('click', ()=>{
+  postPages.push(newPage());
+  postCurrentIndex = postPages.length-1;
+  renderPostCarousel();
+});
+$('duplicatePage').addEventListener('click', ()=>{
+  const copy = newPage(Object.assign({}, postPages[postCurrentIndex], { id:undefined }));
+  postPages.splice(postCurrentIndex+1, 0, copy);
+  postCurrentIndex++;
+  renderPostCarousel();
+});
+$('removePage').addEventListener('click', ()=>{
+  if(postPages.length<=1) return;
+  postPages.splice(postCurrentIndex,1);
+  postCurrentIndex = Math.max(0, postCurrentIndex-1);
+  renderPostCarousel();
+});
+$('quoteText').addEventListener('input', e=>{
+  postPages[postCurrentIndex].text = e.target.value;
+  renderPostCarousel();
+});
+$('postFontFamily').addEventListener('change', e=>{ postPages[postCurrentIndex].font = e.target.value; renderPostCarousel(); });
+$('postFontSize').addEventListener('input', e=>{ postPages[postCurrentIndex].size = parseInt(e.target.value)||64; renderPostCarousel(); });
+$('postTextColor').addEventListener('change', e=>{ postPages[postCurrentIndex].textColor = e.target.value; renderPostCarousel(); });
+$('gradientAngle').addEventListener('input', e=>{ postPages[postCurrentIndex].angle = parseInt(e.target.value)||0; renderPostCarousel(); });
+$('applyCustomGradient').addEventListener('click', ()=>{
+  postPages[postCurrentIndex].gradient = [$('customColor1').value, $('customColor2').value];
+  renderPostCarousel();
+});
+$('postPrev').addEventListener('click', ()=> goToPage(postCurrentIndex-1<0?postPages.length-1:postCurrentIndex-1));
+$('postNext').addEventListener('click', ()=> goToPage(postCurrentIndex+1>=postPages.length?0:postCurrentIndex+1));
+
+// swipe / flick support, like an Instagram carousel
+(function(){
+  const viewport = $('postCarouselViewport');
+  const track = $('postCarouselTrack');
+  let dragging = false, startX = 0, baseOffset = 0;
+  viewport.addEventListener('pointerdown', e=>{
+    dragging = true; startX = e.clientX; baseOffset = -postCurrentIndex*360;
+    track.style.transition = 'none';
+    viewport.setPointerCapture(e.pointerId);
+  });
+  viewport.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx = e.clientX-startX;
+    track.style.transform = `translateX(${baseOffset+dx}px)`;
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false;
+    const dx = e.clientX-startX;
+    track.style.transition = '';
+    if(dx < -60 && postCurrentIndex < postPages.length-1) postCurrentIndex++;
+    else if(dx > 60 && postCurrentIndex > 0) postCurrentIndex--;
+    renderPostCarousel();
+  }
+  viewport.addEventListener('pointerup', endDrag);
+  viewport.addEventListener('pointercancel', endDrag);
+})();
+
+function setPostStatus(msg){ $('postStatus').textContent = msg; }
+function downloadPage(page, index){
+  const c = document.createElement('canvas'); c.width=POST_SIZE; c.height=POST_SIZE;
+  drawPostPage(c.getContext('2d'), page);
+  c.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `post-page-${index+1}.png`;
+    a.click();
+  }, 'image/png');
+}
+$('downloadCurrentPage').addEventListener('click', ()=>{
+  downloadPage(postPages[postCurrentIndex], postCurrentIndex);
+  setPostStatus('Downloaded page '+(postCurrentIndex+1)+'.');
+});
+$('downloadAllPages').addEventListener('click', ()=>{
+  postPages.forEach((page,i)=> setTimeout(()=> downloadPage(page,i), i*300));
+  setPostStatus('Downloading all '+postPages.length+' pages…');
+});
+
+buildGradientSwatches();
+renderPostCarousel();
 </script>
 </body>
 </html>
